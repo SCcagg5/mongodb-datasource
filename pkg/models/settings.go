@@ -8,6 +8,7 @@ import (
 )
 
 type PluginSettings struct {
+	ConnectionURI               string                `json:"connectionUri"`
 	Host                        string                `json:"host"`
 	Port                        int                   `json:"port"`
 	Database                    string                `json:"database"`

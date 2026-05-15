@@ -197,6 +197,68 @@ func TestSetUri(t *testing.T) {
 			t.Errorf("expected connection string %s, got %s", expected, opts.GetURI())
 		}
 	})
+
+	t.Run("should use full connection uri and infer database", func(t *testing.T) {
+		opts := options.Client()
+		connectionURI := "mongodb://database:27017/prefect?authMechanism=MONGODB-X509&authSource=%24external&tls=true&tlsCAFile=/certs/authority_ca.crt&tlsCertificateKeyFile=/certs/client.pem&directConnection=true&serverSelectionTimeoutMS=5000"
+		config := &models.PluginSettings{
+			ConnectionURI: connectionURI,
+		}
+
+		err := setUri(config, opts)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if opts.GetURI() != connectionURI {
+			t.Errorf("expected connection string %s, got %s", connectionURI, opts.GetURI())
+		}
+		if config.Database != "prefect" {
+			t.Errorf("expected database %s, got %s", "prefect", config.Database)
+		}
+	})
+
+	t.Run("should use database fallback with full connection uri", func(t *testing.T) {
+		opts := options.Client()
+		connectionURI := "mongodb://database:27017?directConnection=true"
+		config := &models.PluginSettings{
+			ConnectionURI: connectionURI,
+			Database:      "prefect",
+		}
+
+		err := setUri(config, opts)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if opts.GetURI() != connectionURI {
+			t.Errorf("expected connection string %s, got %s", connectionURI, opts.GetURI())
+		}
+		if config.Database != "prefect" {
+			t.Errorf("expected database %s, got %s", "prefect", config.Database)
+		}
+	})
+}
+
+func TestBuildMongoOpts(t *testing.T) {
+	t.Run("should ignore decomposed auth and tls fields when full connection uri is set", func(t *testing.T) {
+		config := &models.PluginSettings{
+			ConnectionURI: "mongodb://database:27017/prefect?authMechanism=MONGODB-X509&authSource=%24external&tls=true&tlsCAFile=/certs/authority_ca.crt&tlsCertificateKeyFile=/certs/client.pem&directConnection=true&serverSelectionTimeoutMS=5000",
+			AuthMethod:    mongoAuthUsernamePassword,
+			TlsOption:     tlsEnabled,
+		}
+
+		opts, err := buildMongoOpts(config)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if opts.GetURI() != config.ConnectionURI {
+			t.Errorf("expected connection string %s, got %s", config.ConnectionURI, opts.GetURI())
+		}
+		if config.Database != "prefect" {
+			t.Errorf("expected database %s, got %s", "prefect", config.Database)
+		}
+	})
 }
 
 func TestSetAuth(t *testing.T) {

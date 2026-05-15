@@ -42,6 +42,7 @@ export interface JsQueryResult {
 
 export interface MongoDataSourceOptions extends DataSourceJsonData {
   // Connection settings
+  connectionUri?: string;
   connectionStringScheme?: string;
   host?: string;
   database?: string;

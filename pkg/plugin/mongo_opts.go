@@ -3,6 +3,7 @@ package plugin
 import (
 	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/haohanyang/mongodb-datasource/pkg/models"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -16,6 +17,10 @@ func buildMongoOpts(config *models.PluginSettings) (*options.ClientOptions, erro
 	err := setUri(config, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if hasConnectionURI(config) {
+		return opts, nil
 	}
 
 	err = setAuth(config, opts)
@@ -59,9 +64,56 @@ func setAuth(config *models.PluginSettings, opts *options.ClientOptions) error {
 	return nil
 }
 
-// Set connection string from plugin settings
-// Only set connection schema, host, database and connection options here
+func hasConnectionURI(config *models.PluginSettings) bool {
+	return strings.TrimSpace(config.ConnectionURI) != ""
+}
+
+func databaseFromConnectionURI(connectionURI string) (string, error) {
+	parsed, err := url.Parse(connectionURI)
+	if err != nil {
+		return "", err
+	}
+
+	database := strings.Trim(parsed.Path, "/")
+	if database == "" {
+		return "", nil
+	}
+
+	// MongoDB database names cannot contain '/', but split defensively in case a URI
+	// contains an unexpected extra path segment.
+	parts := strings.Split(database, "/")
+	database, err = url.PathUnescape(parts[0])
+	if err != nil {
+		return "", err
+	}
+
+	return database, nil
+}
+
+// Set connection string from plugin settings.
+// If connectionUri is provided, it is used as the full MongoDB URI and all
+// decomposed connection/auth/TLS fields are intentionally ignored.
+// Otherwise, build the URI from scheme, host, database and connection options.
 func setUri(config *models.PluginSettings, opts *options.ClientOptions) error {
+	if hasConnectionURI(config) {
+		connectionURI := strings.TrimSpace(config.ConnectionURI)
+		opts.ApplyURI(connectionURI)
+
+		if config.Database == "" {
+			database, err := databaseFromConnectionURI(connectionURI)
+			if err != nil {
+				return err
+			}
+			config.Database = database
+		}
+
+		if config.Database == "" {
+			return errors.New("missing database")
+		}
+
+		return opts.Validate()
+	}
+
 	if config.Host == "" {
 		return errors.New("missing MongoDB host")
 	}

@@ -51,6 +51,23 @@ export function ConfigEditor(props: Props) {
       />
       <Divider />
       <ConfigSection title="Connection">
+        <Field label="Connection URI" description={descriptions.connectionUri}>
+          <Input
+            id="config-editor-connection-uri"
+            placeholder="mongodb://database:27017/prefect?directConnection=true"
+            value={jsonData.connectionUri}
+            onChange={onDataSourceOptionChanged('connectionUri')}
+            width={100}
+          ></Input>
+        </Field>
+
+        {jsonData.connectionUri && (
+          <Alert severity="info" title="Connection URI mode">
+            The full URI is used as-is by the backend. Scheme, Host, Connection String Options, Authentication, and
+            TLS/SSL fields below are ignored. Keep Database only as a fallback if the URI has no database path.
+          </Alert>
+        )}
+
         <Field label="Scheme" description={descriptions.scheme} required>
           <RadioButtonGroup
             id="config-editor-connection-scheme"
