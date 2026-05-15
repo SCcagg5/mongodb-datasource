@@ -200,7 +200,7 @@ func TestSetUri(t *testing.T) {
 
 	t.Run("should use full connection uri and infer database", func(t *testing.T) {
 		opts := options.Client()
-		connectionURI := "mongodb://database:27017/prefect?authMechanism=MONGODB-X509&authSource=%24external&tls=true&tlsCAFile=/certs/authority_ca.crt&tlsCertificateKeyFile=/certs/client.pem&directConnection=true&serverSelectionTimeoutMS=5000"
+		connectionURI := "mongodb://database:27017/prefect?authMechanism=MONGODB-X509&authSource=%24external&tls=true&directConnection=true&serverSelectionTimeoutMS=5000"
 		config := &models.PluginSettings{
 			ConnectionURI: connectionURI,
 		}
@@ -220,7 +220,7 @@ func TestSetUri(t *testing.T) {
 
 	t.Run("should use database fallback with full connection uri", func(t *testing.T) {
 		opts := options.Client()
-		connectionURI := "mongodb://database:27017?directConnection=true"
+		connectionURI := "mongodb://database:27017/?directConnection=true"
 		config := &models.PluginSettings{
 			ConnectionURI: connectionURI,
 			Database:      "prefect",
@@ -243,7 +243,7 @@ func TestSetUri(t *testing.T) {
 func TestBuildMongoOpts(t *testing.T) {
 	t.Run("should ignore decomposed auth and tls fields when full connection uri is set", func(t *testing.T) {
 		config := &models.PluginSettings{
-			ConnectionURI: "mongodb://database:27017/prefect?authMechanism=MONGODB-X509&authSource=%24external&tls=true&tlsCAFile=/certs/authority_ca.crt&tlsCertificateKeyFile=/certs/client.pem&directConnection=true&serverSelectionTimeoutMS=5000",
+			ConnectionURI: "mongodb://database:27017/prefect?authMechanism=MONGODB-X509&authSource=%24external&tls=true&directConnection=true&serverSelectionTimeoutMS=5000",
 			AuthMethod:    mongoAuthUsernamePassword,
 			TlsOption:     tlsEnabled,
 		}
